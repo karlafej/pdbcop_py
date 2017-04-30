@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd 
 from biopandas.pdb import PandasPdb
 
 ###########
@@ -51,9 +52,33 @@ def blowest(Pdb, n, record = 'ATOM'):
     """
     return Pdb.df[record].nsmallest(n, 'b_factor')
 
+def bvalues_chains(Pdb, record = 'ATOM'):
+    """
+    """
+    row_list = []
+    for chain_id in Pdb.df[record]['chain_id'].unique():
+        filter = Pdb.df[record]['chain_id'] == chain_id
+        tmp = Pdb.df[record][filter]
+        tmp_dict = {}
+        tmp_dict['chain_id'] = chain_id
+        tmp_dict['B_ave'] = tmp['b_factor'].mean()       
+        tmp_dict['B_min'] = tmp['b_factor'].min()
+        tmp_dict['B_max'] = tmp['b_factor'].max()
+        row_list.append(tmp_dict)
+    b_chains = pd.DataFrame(row_list)
+    return b_chains
+
+
 #########
 # Occupancy
 #########
+
+def occupancies(Pdb, record = 'ATOM'):
+    """
+    """
+    occ_min = Pdb.df[record]['occupancy'].min()
+    occ_max = Pdb.df[record]['occupancy'].max()
+    return occ_min, occ_max
 
 def occupancy_partial(Pdb):
     occ_part = {} 
@@ -79,7 +104,6 @@ def fasta(Pdb):
     TO DO: write to a file
     """
     sequence = Pdb.amino3to1()
-    sequence_list = list(sequence.loc[sequence['chain_id'] == 'A', 'residue_name'])
     for chain_id in sequence['chain_id'].unique():
         print('\n> Chain ID: %s' % chain_id)
         print(''.join(sequence.loc[sequence['chain_id'] == chain_id, 'residue_name']))
@@ -161,11 +185,13 @@ if __name__ == '__main__': #just for testing...
     print(blargest(ppdb, 5, record = 'HETATM'))
     print(blowest(ppdb, 5))
     print(bvalues(ppdb))
+    print(bvalues_chains(ppdb))
     fasta(ppdb)
     print(residue_count(ppdb))
     print(nonstandard(ppdb, record = 'HETATM').head())
     print(occupancy_partial(ppdb)['ATOM'].head())
     print(occupancy_low(ppdb, 0.16))
+    print(occupancies(ppdb))
 
     ppdb2 = PandasPdb().fetch_pdb('3nir')
     e123 = eigenvalues(ppdb2)
